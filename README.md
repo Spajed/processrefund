@@ -1,6 +1,6 @@
 # Process Refund
 
-An attempt to implment Process Doppelgänging
+An attempt to implement Process Doppelgänging
 ## Getting Started
 
 Just clone the repo and open the .sln with Visual Studio 2015.
