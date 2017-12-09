@@ -23,6 +23,7 @@ exmaple:
   Yet in the black hat slide show they show replacing "svchost.exe", but after viewing the DEMO image in the slide show
   it is clear they didn't replace svchost.exe in the demo but Vmmap.exe from sysinternals.
  ![alt text](https://raw.githubusercontent.com/spajed/processrefund/master/cheating.png) ![alt text](https://raw.githubusercontent.com/spajed/processrefund/master/cheating2.png)
+ * This techinque will not bypass all AntiViruses because of the use of NtCreateThreadEx, which is equal to CreateRemoteThread.
+   An AntiVirus may monitor the creating of remote thread thus detecting our Doppelgänging.
 ## Acknowledgments
-
 * https://www.blackhat.com/docs/eu-17/materials/eu-17-Liberman-Lost-In-Transaction-Process-Doppelganging.pdf
