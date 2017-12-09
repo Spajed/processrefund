@@ -7,7 +7,63 @@
 #define RTL_MAX_DRIVE_LETTERS   32
 #define RTL_USER_PROC_PARAMS_NORMALIZED 0x00000001
 
+typedef struct _UNICODE_STRING_DWORD64
+{
+	WORD Length;
+	WORD MaximumLength;
+	DWORD64 Buffer;
+} UNICODE_STRING64, STRING64, *PSTRING64;
 
+struct _LIST_ENTRY_DWORD64
+{
+	DWORD64 Flink;
+	DWORD64 Blink;
+};
+
+typedef struct _CURDIR_64
+{
+	UNICODE_STRING64 DosPath;
+	UINT64 Handle;
+} CURDIR64, *PCURDIR64;
+typedef struct _RTL_DRIVE_LETTER_CURDIR_64
+{
+	WORD Flags;
+	WORD Length;
+	ULONG TimeStamp;
+	STRING64 DosPath;
+} RTL_DRIVE_LETTER_CURDIR64, *PRTL_DRIVE_LETTER_CURDIR64;
+typedef struct _RTL_USER_PROCESS_PARAMETERS_64
+{
+	ULONG MaximumLength;
+	ULONG Length;
+	ULONG Flags;
+	ULONG DebugFlags;
+	UINT64 ConsoleHandle;
+	ULONG ConsoleFlags;
+	UINT64 StandardInput;
+	UINT64 StandardOutput;
+	UINT64 StandardError;
+	CURDIR64 CurrentDirectory;
+	UNICODE_STRING64 DllPath;
+	UNICODE_STRING64 ImagePathName;
+	UNICODE_STRING64 CommandLine;
+	UINT64 Environment;
+	ULONG StartingX;
+	ULONG StartingY;
+	ULONG CountX;
+	ULONG CountY;
+	ULONG CountCharsX;
+	ULONG CountCharsY;
+	ULONG FillAttribute;
+	ULONG WindowFlags;
+	ULONG ShowWindowFlags;
+	UNICODE_STRING64 WindowTitle;
+	UNICODE_STRING64 DesktopInfo;
+	UNICODE_STRING64 ShellInfo;
+	UNICODE_STRING64 RuntimeData;
+	RTL_DRIVE_LETTER_CURDIR64 CurrentDirectores[32];
+	ULONG EnvironmentSize;
+} RTL_USER_PROCESS_PARAMETERS64, *PRTL_USER_PROCESS_PARAMETERS64;
 
 
 typedef struct _CURDIR
@@ -66,6 +122,130 @@ typedef struct my_RTL_USER_PROCESS_PARAMETERS
 	ULONG LoaderThreads;
 } my_RTL_USER_PROCESS_PARAMETERS, *my_PRTL_USER_PROCESS_PARAMETERS;
 
+typedef struct _PROCESS_BASIC_INFORMATION64 {
+	NTSTATUS ExitStatus;
+	UINT32 Reserved0;
+	UINT64 PebBaseAddress;
+	UINT64 AffinityMask;
+	UINT32 BasePriority;
+	UINT32 Reserved1;
+	UINT64 UniqueProcessId;
+	UINT64 InheritedFromUniqueProcessId;
+} PROCESS_BASIC_INFORMATION64;
+typedef struct _PEB64
+{
+
+	union
+	{
+		struct
+		{
+			BYTE InheritedAddressSpace;
+			BYTE ReadImageFileExecOptions;
+			BYTE BeingDebugged;
+			BYTE BitField;
+		};
+		DWORD64 dummy01;
+	};
+	DWORD64 Mutant;
+	 DWORD64 ImageBaseAddress;
+	 DWORD64 Ldr;
+	 DWORD64 ProcessParameters;
+	 DWORD64 SubSystemData;
+	 DWORD64 ProcessHeap;
+	 DWORD64 FastPebLock;
+	 DWORD64 AtlThunkSListPtr;
+	 DWORD64 IFEOKey;
+	 DWORD64 CrossProcessFlags;
+	 DWORD64 UserSharedInfoPtr;
+	DWORD SystemReserved;
+	DWORD AtlThunkSListPtr32;
+	 DWORD64 ApiSetMap;
+	 DWORD64 TlsExpansionCounter;
+	 DWORD64 TlsBitmap;
+	DWORD TlsBitmapBits[2];
+	 DWORD64 ReadOnlySharedMemoryBase;
+	 DWORD64 HotpatchInformation;
+	 DWORD64 ReadOnlyStaticServerData;
+	 DWORD64 AnsiCodePageData;
+	 DWORD64 OemCodePageData;
+	 DWORD64 UnicodeCaseTableData;
+	DWORD NumberOfProcessors;
+	union
+	{
+		DWORD NtGlobalFlag;
+		DWORD dummy02;
+	};
+	LARGE_INTEGER CriticalSectionTimeout;
+	 DWORD64 HeapSegmentReserve;
+	 DWORD64 HeapSegmentCommit;
+	 DWORD64 HeapDeCommitTotalFreeThreshold;
+	 DWORD64 HeapDeCommitFreeBlockThreshold;
+	DWORD NumberOfHeaps;
+	DWORD MaximumNumberOfHeaps;
+	 DWORD64 ProcessHeaps;
+	 DWORD64 GdiSharedHandleTable;
+	 DWORD64 ProcessStarterHelper;
+	 DWORD64 GdiDCAttributeList;
+	 DWORD64 LoaderLock;
+	DWORD OSMajorVersion;
+	DWORD OSMinorVersion;
+	WORD OSBuildNumber;
+	WORD OSCSDVersion;
+	DWORD OSPlatformId;
+	DWORD ImageSubsystem;
+	DWORD ImageSubsystemMajorVersion;
+	 DWORD64 ImageSubsystemMinorVersion;
+	 DWORD64 ActiveProcessAffinityMask;
+	 DWORD64 GdiHandleBuffer[30];
+	 DWORD64 PostProcessInitRoutine;
+	 DWORD64 TlsExpansionBitmap;
+	DWORD TlsExpansionBitmapBits[32];
+	 DWORD64 SessionId;
+	ULARGE_INTEGER AppCompatFlags;
+	ULARGE_INTEGER AppCompatFlagsUser;
+	 DWORD64 pShimData;
+	 DWORD64 AppCompatInfo;
+	 struct _UNICODE_STRING_DWORD64 CSDVersion;
+	 DWORD64 ActivationContextData;
+	 DWORD64 ProcessAssemblyStorageMap;
+	 DWORD64 SystemDefaultActivationContextData;
+	 DWORD64 SystemAssemblyStorageMap;
+	 DWORD64 MinimumStackCommit;
+	 DWORD64 FlsCallback;
+	 struct _LIST_ENTRY_DWORD64 FlsListHead;
+	 DWORD64 FlsBitmap;
+	DWORD FlsBitmapBits[4];
+	 DWORD64 FlsHighIndex;
+	 DWORD64 WerRegistrationData;
+	 DWORD64 WerShipAssertPtr;
+	 DWORD64 pContextData;
+	 DWORD64 pImageHeaderHash;
+	 DWORD64 TracingFlags;
+	 DWORD64 CsrServerReadOnlySharedMemoryBase;
+} PEB64;
+
+
+
+
+
+
+typedef
+NTSTATUS(WINAPI *pfnNtWow64QueryInformationProcess64)
+(HANDLE ProcessHandle, UINT32 ProcessInformationClass,
+	PVOID ProcessInformation, UINT32 ProcessInformationLength,
+	UINT32* ReturnLength);
+
+typedef
+NTSTATUS(WINAPI *pfnNtWow64ReadVirtualMemory64)
+(HANDLE ProcessHandle, PVOID64 BaseAddress,
+	PVOID BufferData, UINT64 BufferLength,
+	PUINT64 ReturnLength);
+
+typedef
+NTSTATUS(WINAPI *pfnNtQueryInformationProcess)
+(HANDLE ProcessHandle, ULONG ProcessInformationClass,
+	PVOID ProcessInformation, UINT32 ProcessInformationLength,
+	UINT32* ReturnLength);
 typedef  NTSTATUS(NTAPI *NtResumeThread)(
 	_In_ HANDLE               ThreadHandle,
 	_Out_opt_ PULONG              SuspendCount
@@ -76,6 +256,14 @@ typedef NTSTATUS(NTAPI *my_NtQueryInformationProcess)(
 	IN PROCESSINFOCLASS ProcessInformationClass,
 	OUT PVOID ProcessInformation,
 	IN ULONG ProcessInformationLength,
+	OUT PULONG ReturnLength OPTIONAL
+	);
+typedef NTSTATUS(NTAPI *my_NtWow64QueryInformationProcess64)
+(
+	IN  HANDLE ProcessHandle,
+	IN  ULONG  ProcessInformationClass,
+	OUT PVOID  ProcessInformation64,
+	IN  ULONG  Length,
 	OUT PULONG ReturnLength OPTIONAL
 	);
 

