@@ -14,8 +14,8 @@ processrefund.exe <exe to Doppelgang> <your exe>
 exmaple:
 	processrefund.exe svchost.exe MalExe.exe
  ![alt text](https://raw.githubusercontent.com/spajed/processrefund/master/example.png)
- ![alt text](https://raw.githubusercontent.com/spajed/processrefund/master/memory.png)
  ![alt text](https://raw.githubusercontent.com/spajed/processrefund/master/modules.png)
+ ![alt text](https://raw.githubusercontent.com/spajed/processrefund/master/memory.png)
 
 ### Problems with Process Doppelgänging
 * You can not replace any file. If you try to replace  C:\windows\system32\svchost.exe you will get "Access Denied".
