@@ -11,8 +11,6 @@ Currently this works only in x64.
 To use you need a dummy exe like svchost.exe and your malicous exe.
 read below - you need to be able to write over the file
 
-processrefund.exe <exe to Doppelgang> <your exe>
-
 exmaple:
 
 	processrefund.exe svchost.exe MalExe.exe
