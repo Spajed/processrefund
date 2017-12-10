@@ -10,6 +10,7 @@ Just clone the repo and open the .sln with Visual Studio 2015.
 Currently this works only in x64.
 To use you need a dummy exe like svchost.exe and your malicous exe.
 read below - you need to be able to write over the file
+WARNING DONT USE ON WIN10 YOU WILL GET A BSOD.
 
 exmaple:
 
