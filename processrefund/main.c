@@ -97,7 +97,6 @@ LPVOID GetBaseAddressByName(HANDLE hProcess, char *module)
 		VirtualQueryEx(hProcess, lpMem, &mbi, sizeof(MEMORY_BASIC_INFORMATION));
 		GetMappedFileName(hProcess, mbi.BaseAddress, moduleName, MAX_PATH);
 
-		printf("%s\n", moduleName);
 		if (strstr(moduleName,module))//mbi.Type & MEM_IMAGE)
 			return mbi.BaseAddress;
 		/* increment lpMem to next region of memory */
