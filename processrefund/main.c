@@ -83,18 +83,22 @@ DisplayErrorText(
 		FreeLibrary(hModule);
 }
 
-LPVOID GetBaseAddressByName(HANDLE hProcess)
+LPVOID GetBaseAddressByName(HANDLE hProcess, char *module)
 {
 	MEMORY_BASIC_INFORMATION    mbi;
 	SYSTEM_INFO si;
 	LPVOID lpMem;
+	char moduleName[MAX_PATH] = { 0 };
 	/* Get maximum address range from system info */
 	GetSystemInfo(&si);
 	/* walk process addresses */
 	lpMem = 0;
 	while (lpMem < si.lpMaximumApplicationAddress) {
 		VirtualQueryEx(hProcess, lpMem, &mbi, sizeof(MEMORY_BASIC_INFORMATION));
-		if (mbi.Type & MEM_IMAGE)
+		GetMappedFileName(hProcess, mbi.BaseAddress, moduleName, MAX_PATH);
+
+		printf("%s\n", moduleName);
+		if (strstr(moduleName,module))//mbi.Type & MEM_IMAGE)
 			return mbi.BaseAddress;
 		/* increment lpMem to next region of memory */
 		lpMem = (LPVOID)((ULONGLONG)mbi.BaseAddress +(ULONGLONG)mbi.RegionSize);
@@ -233,7 +237,7 @@ int main(int argc,char *argv[] )
 
 	ULONGLONG oep = ntHeader->OptionalHeader.AddressOfEntryPoint;
 
-	oep+=(ULONGLONG)GetBaseAddressByName(hProcess);
+	oep+=(ULONGLONG)GetBaseAddressByName(hProcess,argv[1]);
 
 
 	printf("[+] our new process oep is 0x%llx\n", oep);
@@ -264,10 +268,10 @@ int main(int argc,char *argv[] )
 		DisplayErrorText(GetLastError());
 		return -1;
 	}
-	printf("[+] creating Process Parameters\n");
+	printf("[+] creating Process Parameters at 0x%p\n", ProcessParams);
 
 	LPVOID RemoteProcessParams;
-	RemoteProcessParams = VirtualAllocEx(hProcess, ProcessParams, (DWORD)ProcessParams&0xffff + ProcessParams->EnvironmentSize + ProcessParams->MaximumLength, MEM_COMMIT | MEM_RESERVE,PAGE_READWRITE);
+	RemoteProcessParams = VirtualAllocEx(hProcess, ProcessParams, (ULONGLONG)ProcessParams&0xffff + ProcessParams->EnvironmentSize + ProcessParams->MaximumLength, MEM_COMMIT | MEM_RESERVE,PAGE_READWRITE);
 	if(NULL == RemoteProcessParams)
 	{
 		DisplayErrorText(GetLastError());
@@ -314,10 +318,10 @@ int main(int argc,char *argv[] )
 		DisplayErrorText(GetLastError());
 		return -1;
 	}
-	printf("[+] writing our paramters to the process peb 0x%08x\n", peb);
+	printf("[+] writing our paramters to the process peb 0x%08p\n", peb);
 
 	HANDLE hThread;
-	ret = createThreadEx(&hThread, GENERIC_ALL, NULL, hProcess, (LPTHREAD_START_ROUTINE)oep, NULL, FALSE, 0, 0, 0, NULL);
+	ret = createThreadEx(&hThread, GENERIC_ALL, NULL, hProcess, (LPTHREAD_START_ROUTINE)oep, NULL, TRUE, 0, 0, 0, NULL);
 	printf("[+] Thread created with handle %x\n", hThread);
 	if (FALSE == NT_SUCCESS(ret))
 	{
