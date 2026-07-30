@@ -13,7 +13,7 @@ read below - you need to be able to write over the file.
 
 WARNING DONT USE ON WIN10 YOU WILL GET A BSOD.
 
-exmaple:
+example:
 
 	processrefund.exe svchost.exe MalExe.exe
  ![alt text](https://raw.githubusercontent.com/spajed/processrefund/master/example.png)
